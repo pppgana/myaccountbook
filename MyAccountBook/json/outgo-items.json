@@ -1,0 +1,23 @@
+[
+{"id":1, "category":"食費", "item":"食費(内食)"}, 
+{"id":2, "category":"交際費", "item":"交際費"}, 
+{"id":3, "category":"食費", "item":"朝食費"}, 
+{"id":4, "category":"食費", "item":"昼食費"}, 
+{"id":5, "category":"食費", "item":"夕食費"}, 
+{"id":6, "category":"食費", "item":"飲料費"}, 
+{"id":7, "category":"食費", "item":"その他外食費"}, 
+{"id":8, "category":"日用品", "item":"生活雑貨"}, 
+{"id":9, "category":"医療", "item":"医療/医薬"}, 
+{"id":10, "category":"教養・教育", "item":"教養/教育"}, 
+{"id":11, "category":"教養・教育", "item":"書籍"}, 
+{"id":12, "category":"通信費", "item":"携帯電話"}, 
+{"id":13, "category":"通信費", "item":"インターネット"}, 
+{"id":14, "category":"通信費", "item":"その他通信"}, 
+{"id":15, "category":"交通費", "item":"交通費(滋賀移動)"}, 
+{"id":16, "category":"交通費", "item":"交通費(通勤バス)"}, 
+{"id":17, "category":"交通費", "item":"交通費(自宅/駅間) "}, 
+{"id":18, "category":"交通費", "item":"その他交通費"}, 
+{"id":19, "category":"趣味/行楽", "item":"趣味(自転車)"}, 
+{"id":20, "category":"趣味/行楽", "item":"趣味(鉄道)"}, 
+{"id":21, "category":"趣味/行楽", "item":"行楽"}
+]

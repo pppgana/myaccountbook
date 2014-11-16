@@ -1,0 +1,5 @@
+[
+{"id":1, "name":"現金", "value":"cash"}, 
+{"id":2, "name":"カード", "value":"cards"}, 
+{"id":3, "name":"電子マネー", "value":"iccards"}
+]

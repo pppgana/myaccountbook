@@ -1,0 +1,9 @@
+.money {
+	text-align: right;
+	ime-mode: disabled;
+}
+
+#googlemap {
+	width: 480px;
+	height: 360px;
+}

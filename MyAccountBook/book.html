@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" >
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/eggplant/jquery-ui.css" />
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/i18n/jquery-ui-i18n.min.js"></script>
+<script src="//maps.googleapis.com/maps/api/js?sensor=false"></script>
+<link rel="stylesheet" href="css/main.css" />
+<script src="scripts/main.js"></script>
+<title>支出内容入力</title>
+</head>
+<body>
+<h1>支出内容入力</h1>
+<form>
+	<p>
+		<label>支出日</label>
+		<input type="text" id="datepicker" />
+	</p>
+	<p>
+		<label>金額</label>
+		<input type="number" min=0 class="money" />
+		<label>支払方法</label>
+		<select id="method"> </select>
+		<label>支払区分</label>
+		<select id="payment"> </select>
+	</p>
+	<p>
+		<label>項目</label>
+		<select id="items"> </select>
+	</p>
+	<p>
+		<label>支出場所</label>
+		<input type="button" id="loc" value="位置を取得" />
+		<div id="googlemap">　</div>
+	</p>
+	<p>
+		<label>支出場所補足説明</label>
+		<input type="text" />
+	</p>
+</form>
+</body>
+</html>
