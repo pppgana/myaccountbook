@@ -6,6 +6,7 @@
 #
 #
 #====================================================================
+use lib 'YAML-Tiny-1.64/lib';
 use strict;
 use warnings;
 use Getopt::Std;
@@ -35,6 +36,15 @@ my $sleep_time = 30;
 my $times = 2;
 my $config_file = "target.yaml";
 
+=pod
+my @socket_statuses = (
+  "LISTEN", "CLOSED", "CLOSING", 
+  "SYN_SENT", "SYN_RCVD", "LAST_ACK", 
+  "TIME_WAIT", "CLOSE_WAIT", "FIN_WAIT_1", 
+  "FIN_WAIT_2", "ESTABLISHED" 
+);
+=cut
+
 my %CLOSED_CNT;
 my %LISTEN_CNT;
 my %CLOSING_CNT;
@@ -47,7 +57,19 @@ my %FIN_WAIT_2_CNT;
 my %ESTABLISHED_CNT;
 my %CLOSE_WAIT_CNT;
 
-my %sockets_cnt;
+my %s_status_cnt_hash = (
+  LISTEN => \%LISTEN_CNT, 
+  CLOSED => \%CLOSED_CNT, 
+  CLOSING => \%CLOSING_CNT, 
+  SYN_SENT => \%SYN_SENT_CNT, 
+  SYN_RCVD => \%SYN_RCVD_CNT, 
+  LAST_ACK => \%LAST_ACK_CNT, 
+  TIME_WAIT => \%TIME_WAIT_CNT, 
+  CLOSE_WAIT => \%CLOSE_WAIT_CNT, 
+  FIN_WAIT_1 => \%FIN_WAIT_1_CNT, 
+  FIN_WAIT_2 => \%FIN_WAIT_2_CNT, 
+  ESTABLISHED => \%ESTABLISHED_CNT,
+);
 
 #---+---1----+----2----+----3----+----4----+----5----+----6----+
 # コマンドライン・オプションの処理
@@ -108,28 +130,61 @@ sub get_time_stamp () {
 
 sub count_socket() {
   my ($line, $socket_name) = @_;
-  if    ( $line =~ /CLOSED$/ ) 
-    { $CLOSED_CNT{$socket_name} = $CLOSED_CNT{$socket_name}++; }
-  elsif ( $line =~ /LISTEN$/ ) 
-    { $LISTEN_CNT{$socket_name} = $LISTEN_CNT{$socket_name}++; }
-  elsif ( $line =~ /CLOSING$/ ) 
-    { $CLOSING_CNT{$socket_name} = $CLOSING_CNT{$socket_name}++; }
-  elsif ( $line =~ /SYN_SENT$/ ) 
-    { $SYN_SENT_CNT{$socket_name} = $SYN_SENT_CNT{$socket_name}++; }
-  elsif ( $line =~ /SYN_RCVD$/ ) 
-    { $SYN_RCVD_CNT{$socket_name} = $SYN_RCVD_CNT{$socket_name}++; }
-  elsif ( $line =~ /LAST_ACK$/ ) 
-    {$LAST_ACK_CNT{$socket_name} = $LAST_ACK_CNT{$socket_name}++; }
-  elsif ( $line =~ /TIME_WAIT$/ ) 
-    {$TIME_WAIT_CNT{$socket_name} = $TIME_WAIT_CNT{$socket_name}++; }
-  elsif ( $line =~ /FIN_WAIT_1$/ ) 
-    {$FIN_WAIT_1_CNT{$socket_name} = $FIN_WAIT_1_CNT{$socket_name}++; }
-  elsif ( $line =~ /FIN_WAIT_2$/ ) 
-    {$FIN_WAIT_2_CNT{$socket_name} = $FIN_WAIT_2_CNT{$socket_name}++; }
-  elsif ( $line =~ /CLOSE_WAIT$/ ) 
-    {$CLOSE_WAIT_CNT{$socket_name} = $CLOSE_WAIT_CNT{$socket_name}++; }
-  elsif ( $line =~ /ESTABLISHED$/ ) 
-    {$ESTABLISHED_CNT{$socket_name} = $ESTABLISHED_CNT{$socket_name}++; }
+  #print "[count_socket \$line] " . $line;
+
+  foreach my $s_status (keys %s_status_cnt_hash) {
+    if ( $line =~ /$s_status/ ) {
+      $s_status_cnt_hash{$s_status} -> {$socket_name} 
+        = $s_status_cnt_hash{$s_status} -> {$socket_name} + 1;
+      print "[$s_status] " . $s_status_cnt_hash{$s_status} -> {$socket_name} . "\n";
+    }
+  }
+=pod  
+  if ( $line =~ /CLOSED/ ) {
+    $CLOSED_CNT{$socket_name} = $CLOSED_CNT{$socket_name} + 1;
+    #print "[CLOSED CNT] " . $CLOSED_CNT{$socket_name} . "\n";
+  }
+  elsif ( $line =~ /LISTEN/ ) {
+    $LISTEN_CNT{$socket_name} = $LISTEN_CNT{$socket_name} + 1;
+    #print "[LISTEN CNT] " . $LISTEN_CNT{$socket_name} . "\n";
+  }
+  elsif ( $line =~ /CLOSING/ ) { 
+    $CLOSING_CNT{$socket_name} = $CLOSING_CNT{$socket_name} + 1;
+    #print "[CLOSING CNT] " . $CLOSING_CNT{$socket_name} . "\n";
+  }
+  elsif ( $line =~ /SYN_SENT/ ) {
+    $SYN_SENT_CNT{$socket_name} = $SYN_SENT_CNT{$socket_name} + 1; 
+    #print "[SYN_SENT CNT] " . $SYN_SENT_CNT{$socket_name} . "\n";
+  }
+  elsif ( $line =~ /SYN_RCVD/ ) { 
+    $SYN_RCVD_CNT{$socket_name} = $SYN_RCVD_CNT{$socket_name} + 1;
+    #print "[SYN_RCVD CNT] " . $SYN_RCVD_CNT{$socket_name} . "\n";
+  }
+  elsif ( $line =~ /LAST_ACK/ ) {
+    $LAST_ACK_CNT{$socket_name} = $LAST_ACK_CNT{$socket_name} + 1;
+    #print [LAST_ACK　CNT] " . $LAST_ACK_CNT{$socket_name} . "\n";
+  }
+  elsif ( $line =~ /TIME_WAIT/ ) {
+    $TIME_WAIT_CNT{$socket_name} = $TIME_WAIT_CNT{$socket_name} + 1;
+    #print "[TIME_WAIT CNT] " . $TIME_WAIT_CNT{$socket_name} . "\n";
+  }
+  elsif ( $line =~ /FIN_WAIT_1/ ) {
+    $FIN_WAIT_1_CNT{$socket_name} = $FIN_WAIT_1_CNT{$socket_name} + 1;
+    #print "[FIN_WAIT_1 CNT] " . $FIN_WAIT_1_CNT{$socket_name} . "\n";
+  }
+  elsif ( $line =~ /FIN_WAIT_2/ ) {
+    $FIN_WAIT_2_CNT{$socket_name} = $FIN_WAIT_2_CNT{$socket_name} + 1;
+    #print "[FIN_WAIT_2 CNT] " . $FIN_WAIT_2_CNT{$socket_name} . "\n";
+  }
+  elsif ( $line =~ /CLOSE_WAIT/ ) {
+    $CLOSE_WAIT_CNT{$socket_name} = $CLOSE_WAIT_CNT{$socket_name} + 1;
+    print "[CLOSE_WAIT CNT] " . $CLOSE_WAIT_CNT{$socket_name} . "\n";
+  }
+  elsif ( $line =~ /ESTABLISHED/ ) {
+    $ESTABLISHED_CNT{$socket_name} = $ESTABLISHED_CNT{$socket_name} + 1;
+    print "[ESTAB CNT] " . $ESTABLISHED_CNT{$socket_name} . "\n";
+  }
+=cut
 }
 
 sub print_counter () {
