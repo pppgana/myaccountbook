@@ -10,7 +10,7 @@ use lib 'YAML-Tiny-1.64/lib';
 use strict;
 use warnings;
 use Getopt::Std;
-use Getopt::Long qw(:config posix_default no_ignore_case gnu_compat);
+#use Getopt::Long qw(:config posix_default no_ignore_case gnu_compat);
 use Time::Local;
 use YAML::Tiny;
 use Data::Dumper;
@@ -18,7 +18,7 @@ use Data::Dumper;
 #---+---1----+----2----+----3----+----4----+----5----+----6----+
 # YAML属性名 (定数)
 use constant NETSTAT_CMD => "NETSTAT_CMD";
-use constant LOGROOT_DIR => "LOGROOT_DIR";
+#use constant LOGROOT_DIR => "LOGROOT_DIR";
 use constant MONITOR_SOCKETS => "MONITOR_SOCKETS";
 
 #---+---1----+----2----+----3----+----4----+----5----+----6----+
@@ -33,17 +33,9 @@ my %recorded_sockets;
 
 my @cmd_outlines = "";
 my $sleep_time = 30;
-my $times = 2;
+my $times;
 my $config_file = "target.yaml";
-
-=pod
-my @socket_statuses = (
-  "LISTEN", "CLOSED", "CLOSING", 
-  "SYN_SENT", "SYN_RCVD", "LAST_ACK", 
-  "TIME_WAIT", "CLOSE_WAIT", "FIN_WAIT_1", 
-  "FIN_WAIT_2", "ESTABLISHED" 
-);
-=cut
+my $stop_trigger = 1;
 
 my %CLOSED_CNT;
 my %LISTEN_CNT;
@@ -73,11 +65,25 @@ my %s_status_cnt_hash = (
 
 #---+---1----+----2----+----3----+----4----+----5----+----6----+
 # コマンドライン・オプションの処理
+#  -s ： sleep時間 [秒]
+#  -c : YAML設定ファイルの場所
+#  -t : 計測回数
 my %opts;
 getopts ('t:s:c:' => \%opts);
-$sleep_time = $opts{'s'};
-$times = $opts{'t'};
-$config_file = $opts{'c'};
+if ( defined $opts{'s'} ) {
+  $sleep_time = $opts{'s'};
+}
+if ( defined $opts{'c'} ) {
+  $config_file = $opts{'c'};
+}
+if ( defined $opts{'t'} ) {
+  $times = $opts{'t'};
+  $stop_trigger = 1;
+} else {
+  $times = 0;
+  $stop_trigger = 0;
+}
+print Dumper(%opts);
 
 #---+---1----+----2----+----3----+----4----+----5----+----6----+
 # YAMLより各種設定を読み込み
@@ -102,8 +108,16 @@ $logroot_dir = $config -> {LOGROOT_DIR};
 #print Dumper(%recorded_sockets);
 
 #---+---1----+----2----+----3----+----4----+----5----+----6----+
+# レポート・ヘッダーを出力
+print "ScktName" . " " . "DATE" . " " . "TIME" . " ";
+foreach my $s_status (keys %s_status_cnt_hash) {
+  print $s_status . " ";
+}
+print "\n";
+
+#---+---1----+----2----+----3----+----4----+----5----+----6----+
 # ソケット数カウント部
-while (1) {
+while ( $stop_trigger <= $times ) {
   # netstat コマンドを実行
   @cmd_outlines =  `$netstat_cmd`;
   # カウンターをリセット
@@ -118,6 +132,9 @@ while (1) {
     }
   }
   &print_counter;
+  if ( $stop_trigger == 1 ) {
+    $times = $times - 1;
+  }
   sleep $sleep_time;
 }
 
@@ -131,92 +148,29 @@ sub get_time_stamp () {
 sub count_socket() {
   my ($line, $socket_name) = @_;
   #print "[count_socket \$line] " . $line;
-
   foreach my $s_status (keys %s_status_cnt_hash) {
     if ( $line =~ /$s_status/ ) {
       $s_status_cnt_hash{$s_status} -> {$socket_name} 
         = $s_status_cnt_hash{$s_status} -> {$socket_name} + 1;
-      print "[$s_status] " . $s_status_cnt_hash{$s_status} -> {$socket_name} . "\n";
+      #print "[$socket_name / $s_status] " . $s_status_cnt_hash{$s_status} -> {$socket_name} . "\n";
     }
   }
-=pod  
-  if ( $line =~ /CLOSED/ ) {
-    $CLOSED_CNT{$socket_name} = $CLOSED_CNT{$socket_name} + 1;
-    #print "[CLOSED CNT] " . $CLOSED_CNT{$socket_name} . "\n";
-  }
-  elsif ( $line =~ /LISTEN/ ) {
-    $LISTEN_CNT{$socket_name} = $LISTEN_CNT{$socket_name} + 1;
-    #print "[LISTEN CNT] " . $LISTEN_CNT{$socket_name} . "\n";
-  }
-  elsif ( $line =~ /CLOSING/ ) { 
-    $CLOSING_CNT{$socket_name} = $CLOSING_CNT{$socket_name} + 1;
-    #print "[CLOSING CNT] " . $CLOSING_CNT{$socket_name} . "\n";
-  }
-  elsif ( $line =~ /SYN_SENT/ ) {
-    $SYN_SENT_CNT{$socket_name} = $SYN_SENT_CNT{$socket_name} + 1; 
-    #print "[SYN_SENT CNT] " . $SYN_SENT_CNT{$socket_name} . "\n";
-  }
-  elsif ( $line =~ /SYN_RCVD/ ) { 
-    $SYN_RCVD_CNT{$socket_name} = $SYN_RCVD_CNT{$socket_name} + 1;
-    #print "[SYN_RCVD CNT] " . $SYN_RCVD_CNT{$socket_name} . "\n";
-  }
-  elsif ( $line =~ /LAST_ACK/ ) {
-    $LAST_ACK_CNT{$socket_name} = $LAST_ACK_CNT{$socket_name} + 1;
-    #print [LAST_ACK　CNT] " . $LAST_ACK_CNT{$socket_name} . "\n";
-  }
-  elsif ( $line =~ /TIME_WAIT/ ) {
-    $TIME_WAIT_CNT{$socket_name} = $TIME_WAIT_CNT{$socket_name} + 1;
-    #print "[TIME_WAIT CNT] " . $TIME_WAIT_CNT{$socket_name} . "\n";
-  }
-  elsif ( $line =~ /FIN_WAIT_1/ ) {
-    $FIN_WAIT_1_CNT{$socket_name} = $FIN_WAIT_1_CNT{$socket_name} + 1;
-    #print "[FIN_WAIT_1 CNT] " . $FIN_WAIT_1_CNT{$socket_name} . "\n";
-  }
-  elsif ( $line =~ /FIN_WAIT_2/ ) {
-    $FIN_WAIT_2_CNT{$socket_name} = $FIN_WAIT_2_CNT{$socket_name} + 1;
-    #print "[FIN_WAIT_2 CNT] " . $FIN_WAIT_2_CNT{$socket_name} . "\n";
-  }
-  elsif ( $line =~ /CLOSE_WAIT/ ) {
-    $CLOSE_WAIT_CNT{$socket_name} = $CLOSE_WAIT_CNT{$socket_name} + 1;
-    print "[CLOSE_WAIT CNT] " . $CLOSE_WAIT_CNT{$socket_name} . "\n";
-  }
-  elsif ( $line =~ /ESTABLISHED/ ) {
-    $ESTABLISHED_CNT{$socket_name} = $ESTABLISHED_CNT{$socket_name} + 1;
-    print "[ESTAB CNT] " . $ESTABLISHED_CNT{$socket_name} . "\n";
-  }
-=cut
 }
 
 sub print_counter () {
   foreach my $socket_name (keys %recorded_sockets) {
     my $report_line = "[" . $socket_name . "] " . &get_time_stamp . " ";
-    $report_line = $report_line . $CLOSED_CNT{$socket_name}. " ";
-    $report_line = $report_line . $LISTEN_CNT{$socket_name}. " ";
-    $report_line = $report_line . $CLOSING_CNT{$socket_name}. " ";
-    $report_line = $report_line . $SYN_SENT_CNT{$socket_name}. " ";
-    $report_line = $report_line . $SYN_RCVD_CNT{$socket_name}. " ";
-    $report_line = $report_line . $LAST_ACK_CNT{$socket_name}. " ";
-    $report_line = $report_line . $TIME_WAIT_CNT{$socket_name}. " ";
-    $report_line = $report_line . $FIN_WAIT_1_CNT{$socket_name}. " ";
-    $report_line = $report_line . $FIN_WAIT_2_CNT{$socket_name}. " ";
-    $report_line = $report_line . $CLOSE_WAIT_CNT{$socket_name}. " ";
-    $report_line = $report_line . $ESTABLISHED_CNT{$socket_name}."\n";
-    print $report_line;
+    foreach my $s_status (keys %s_status_cnt_hash) {
+      $report_line = $report_line . $s_status_cnt_hash{$s_status} -> {$socket_name} . " ";
+    }
+    print $report_line . "\n";
   }
 }
 
 sub reset_counter () {
   foreach my $socket_name (keys %recorded_sockets) {
-    $CLOSED_CNT{$socket_name} = 0;
-    $LISTEN_CNT{$socket_name} = 0;
-    $CLOSING_CNT{$socket_name} = 0;
-    $SYN_SENT_CNT{$socket_name} = 0;
-    $SYN_RCVD_CNT{$socket_name} = 0;
-    $LAST_ACK_CNT{$socket_name} = 0;
-    $TIME_WAIT_CNT{$socket_name} = 0;
-    $FIN_WAIT_1_CNT{$socket_name} = 0;
-    $FIN_WAIT_2_CNT{$socket_name} = 0;
-    $ESTABLISHED_CNT{$socket_name} = 0;
-    $CLOSE_WAIT_CNT{$socket_name} = 0;
+    foreach my $s_status (keys %s_status_cnt_hash) {
+      $s_status_cnt_hash{$s_status} -> {$socket_name} = 0;
+    }
   }
 }
